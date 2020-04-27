@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-export default ({ postId }) => {
+interface Comment {
+  id: string;
+  content: string;
+}
+export default ({ postId }: { postId: string }) => {
   const [comments, setComments] = useState([]);
 
   const fetchData = async () => {
@@ -17,7 +21,9 @@ export default ({ postId }) => {
   }, []);
 
   const renderedComments = comments.map((comment) => {
-    return <li key={comment.id}>{comment.content}</li>;
+    const someComment: Comment = comment as Comment;
+
+    return <li key={someComment.id}>{someComment.content}</li>;
   });
 
   return <ul>{renderedComments}</ul>;
