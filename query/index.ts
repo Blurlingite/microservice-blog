@@ -48,7 +48,7 @@ app.post("/events", (req, res) => {
     rightPost.comments.push(commentToAdd);
   }
 
-  console.log(posts.comments.comments[0]);
+  console.log(posts);
   res.send({});
 });
 
