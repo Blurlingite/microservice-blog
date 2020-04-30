@@ -9,6 +9,7 @@ app.use(cors());
 interface Comment {
   id: string;
   content: string;
+  status: string;
 }
 
 interface Post {
@@ -39,13 +40,31 @@ app.post("/events", (req, res) => {
 
   if (type === "CommentCreated") {
     // Notice, what we take out from data is what was sent in comments' index.ts when we posted to event bus' url ("http://localhost:4005/events")
-    const { id, content, postId } = data;
+    const { id, content, postId, status } = data;
 
     // find post
     const rightPost = posts[postId];
     // add comment to post
-    const commentToAdd = { id, content };
+    const commentToAdd: Comment = { id, content, status };
     rightPost.comments.push(commentToAdd);
+  }
+
+  if (type === "CommentUpdated") {
+    console.log("Data:" + data);
+
+    const { id, content, postId, status } = data;
+    // find comment
+    const post = posts[postId];
+    const comment = post.comments.find((comment) => {
+      // return the comment if it matches the id
+      return comment.id === id;
+    });
+
+    // since "CommentUpdated" is a generic event, we don't know what changed, so let's reassign other relevant fields of this comment with the incoming data
+    if (comment) {
+      comment.status = status;
+      comment.content = content;
+    }
   }
 
   console.log(posts);

@@ -4,11 +4,6 @@ import { randomBytes } from "crypto";
 import cors from "cors";
 import axios from "axios";
 
-// const express = require("express");
-// const bodyParser = require("body-parser");
-// const { randomBytes } = require("crypto");
-// const cors = require("cors");
-
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
@@ -16,6 +11,7 @@ app.use(cors());
 interface Comment {
   id: string;
   content: string;
+  status: string;
 }
 interface CommentsByPostId {
   [id: string]: Comment[];
@@ -33,7 +29,7 @@ app.post("/posts/:id/comments", async (req, res) => {
 
   const comments = commentsByPostId[req.params.id] || [];
 
-  comments.push({ id: commentId, content });
+  comments.push({ id: commentId, content, status: "pending" });
 
   commentsByPostId[req.params.id] = comments;
 
@@ -43,15 +39,42 @@ app.post("/posts/:id/comments", async (req, res) => {
       id: commentId,
       content,
       postId: req.params.id, // also send along ID of post to know which post this comment belongs to
+      status: "pending",
     },
   });
   res.status(201).send(comments);
 });
 
 // this post goes to the event bus' endpoint
-app.post("/events", (req, res) => {
+app.post("/events", async (req, res) => {
   console.log("Received Event", req.body.type);
 
+  const { type, data } = req.body;
+
+  if (type === "CommentModerated") {
+    const { postId, id, status, content } = data;
+
+    // find comment already stored here and update it's status property
+    // first get the array of comments with postId, then get the single comment with the comment's id
+    const comments = commentsByPostId[postId];
+    const commentToUpdate = comments.find((comment) => {
+      return comment.id === id;
+    });
+
+    if (commentToUpdate) {
+      commentToUpdate.status = status;
+    }
+
+    console.log("The ID is: " + id);
+
+    await axios.post("http://localhost:4005/events", {
+      type: "CommentUpdated",
+      id,
+      status,
+      postId,
+      content,
+    });
+  }
   res.send({});
 });
 
