@@ -6,6 +6,7 @@ import CommentList from "./CommentList";
 interface Comment {
   id: string;
   content: string;
+  status: string;
 }
 
 interface Post {
