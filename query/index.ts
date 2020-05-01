@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import axios from "axios";
 
 const app = express();
 app.use(bodyParser.json());
@@ -24,14 +25,7 @@ interface PostObjectOfObjects {
 
 const posts: PostObjectOfObjects = {};
 
-// get all posts
-app.get("/posts", (req, res) => {
-  res.send(posts);
-});
-
-// receive events from event bus
-app.post("/events", (req, res) => {
-  const { type, data } = req.body;
+const handleEvent = (type: string, data: any) => {
   if (type === "PostCreated") {
     // take out post info from incoming event and add it to the posts object in this file
     const { id, title } = data;
@@ -66,11 +60,30 @@ app.post("/events", (req, res) => {
       comment.content = content;
     }
   }
+};
 
-  console.log(posts);
+// get all posts
+app.get("/posts", (req, res) => {
+  res.send(posts);
+});
+
+// receive events from event bus
+app.post("/events", (req, res) => {
+  const { type, data } = req.body;
+
+  handleEvent(type, data);
   res.send({});
 });
 
-app.listen(4002, () => {
+app.listen(4002, async () => {
   console.log("Listening on 4002");
+
+  // since this is where the query service starts running, we will get all the events from event bus and handle them (in case this service was ever down or just created)
+  const res = await axios.get("http://localhost:4005/events");
+
+  for (let event of res.data) {
+    console.log("Processing event: " + event.type);
+
+    handleEvent(event.type, event.data);
+  }
 });
